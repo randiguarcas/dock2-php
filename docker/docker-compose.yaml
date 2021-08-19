@@ -1,0 +1,51 @@
+version: "3.6"
+services:
+  mysql-db:
+    build:
+      context: .
+      dockerfile: ./mysql/Dockerfile
+    container_name: jes_mysql
+    restart: always
+    ports:
+      - 3305:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: "mysecretpassword"
+      MYSQL_ROOT_USER: "root"
+      MYSQL_DATABASE: "jesdb"
+    volumes:
+      - ./mysql/mysql-data:/var/lib/mysql
+    networks:
+      - mysql_network
+  http-nginx:
+    depends_on:
+      - php-app
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    container_name: jes_nginx
+    restart: unless-stopped
+    ports:
+      - 81:80
+    volumes:
+      - ./nginx:/etc/nginx/conf.d/
+      - ./laravel:/var/www
+    networks:
+      - mysql_network
+  php-app:
+    build:
+      context: .
+      dockerfile: ./php-fpm/Dockerfile
+    container_name: jes_php
+    restart: unless-stopped
+    volumes:
+      - ./laravel:/var/www
+    ports:
+      - "9000:9000"
+    networks:
+      - mysql_network
+volumes:
+  mysql-data: {}
+networks:
+  mysql_network:
+    name: mysql_net
+    driver: bridge
